@@ -17,3 +17,5 @@ Calibration based on recorded data
   - launch the code to compute extrinsic parameters based on recorded images: roslaunch calibration_cameras calibration_cameras_pepper.launch
   - press "c" on your keyboard to compute calibration values
   - check if the resulted XYZ and RPY for last processed image pair correspond to the reality
+
+The values obtained for our Pepper can be found here: https://github.com/nlyubova/pepper_robot/commit/b973bf1ccbd190a6a7fb19e24f7cf9114e0bdcae 
