@@ -1,0 +1,19 @@
+<launch>
+  <arg name="camera" default="naoqi_driver_node/camera" />
+
+  <node pkg="calibration_cameras" type="calibration_cameras" name="calibration_cameras" output="screen" cwd="node">
+    <param name="depth_img_topic" value="/$(arg camera)/ir/image_raw" />
+    <param name="rgb_img_topic" value="/$(arg camera)/front/image_raw" />
+
+    <param name="camera_info_depth_topic" value="/$(arg camera)/depth/camera_info" />
+    <param name="camera_info_rgb_topic" value="/$(arg camera)/front/camera_info" />
+
+    <!-- <param name="images_folder" value="/tmp/images" /> -->
+    <param name="images_folder" value="/home/nlyubova/pr_collaboration/calibration/forPepper/images" />
+
+    <param name="pattern_cols" value="9" />
+    <param name="pattern_rows" value="6" />
+    <param name="pattern_size" value="0.035" />
+  </node>
+
+</launch>
