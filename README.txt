@@ -18,4 +18,10 @@ Calibration based on recorded data
   - press "c" on your keyboard to compute calibration values
   - check if the resulted XYZ and RPY for last processed image pair correspond to the reality
 
-The values obtained for our Pepper can be found here: https://github.com/nlyubova/pepper_robot/commit/b973bf1ccbd190a6a7fb19e24f7cf9114e0bdcae 
+The extrinsic parameters obtained for our Pepper are:
+* XYZ: 0.0708098 0.02 0.118115
+* RPY: -1.5936 -0.0161345 -1.57777
+
+How to update the extrinsic parameters in URDF of your robot:
+* update the values in URDF like here: https://github.com/nlyubova/pepper_robot/commit/b973bf1ccbd190a6a7fb19e24f7cf9114e0bdcae 
+* copy the pepper.urdf file to catkin_ws/src/naoqi_driver/share/urdf/ (and replace the existing one)
