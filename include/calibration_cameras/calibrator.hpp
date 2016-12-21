@@ -76,6 +76,8 @@ private:
 
   //transform listener
   tf::TransformListener listener_;
+
+  std::string input_dir_;
 };
 
 #endif // CALIBRATOR_HPP

@@ -13,9 +13,10 @@ Calibrator::Calibrator():
   //it_(nh_),
   n_cameras(2),
   buf_size(40),
-  processing(true),
+  processing(false),
   px_num(1),
-  buf_now(0)
+  buf_now(0),
+  input_dir_("images")
 {
   cameras_.reserve(n_cameras);
   cameras_.resize(n_cameras);
@@ -87,6 +88,7 @@ Calibrator::Calibrator():
   ROS_INFO_STREAM("pattern_size: " << d_pattern);
   pose.setPatternSize(w_pattern, h_pattern, d_pattern);
 
+  nh_.getParam("images_folder", input_dir_);
 }
 
 void Calibrator::process_cam_info(const sensor_msgs::CameraInfoConstPtr& infoMsg, const int &cam_index)
@@ -171,10 +173,6 @@ bool Calibrator::process_image(const cv::Mat &image, const int &cam_index)
     else
       cv::imshow("image_depth", image_vis);
   }
-  cv::waitKey(1);
-
-  /*if (cam_index == 0)
-      cv::waitKey(0);*/
 
   return res;
 }
@@ -287,7 +285,7 @@ void Calibrator::poseProcess(const std::string &frame)
     float rms = pose.estimatePose(cameras_[0].camera_calib_set,
                                   cameras_[1].camera_calib_set,
                                   pose_res);
-    ROS_INFO_STREAM("Pose estimation completed! Error: " << rms);
+    ROS_INFO_STREAM("Pose estimation error: " << rms);
     /*ROS_INFO_STREAM("t: " << pose_res.t.at<double>(0,0)
                     << " " << pose_res.t.at<double>(1,0)
                     << " " << pose_res.t.at<double>(2,0));*/
@@ -346,7 +344,7 @@ void Calibrator::poseProcess(const std::string &frame)
                     << "XYZ: " << pose_depth_to_head.getOrigin().x() << " "
                     << pose_depth_to_head.getOrigin().y() << " "
                     << pose_depth_to_head.getOrigin().z() << "\n"
-                    << "RPY: " << roll << " " << pitch << " " << yaw);
+                    << "RPY: " << -1*roll << " " << pitch << " " << yaw);
   }
 }
 
@@ -364,9 +362,6 @@ void Calibrator::process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
   //cv::imshow("image_rgb_", cameras_[0].image);
   //cv::imshow("image_depth_", cameras_[1].image);
 
-  if (!processing)
-    return;
-
   //process
   //if (img_mutex_rgb.try_lock() && img_mutex_depth.try_lock())
   {
@@ -376,6 +371,9 @@ void Calibrator::process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
     //img_mutex_rgb.unlock();
     //img_mutex_depth.unlock();
   }
+
+  if (!processing)
+    return;
 
   //cv::imshow("image_rgb_", cameras_[0].image);
   //cv::imshow("image_depth_", cameras_[1].image);
@@ -419,15 +417,10 @@ void Calibrator::saveImagePairs()
 
 void Calibrator::saveImagePair()
 {
-  processing = false;
-
-  std::string inputDir = "images";
-  nh_.getParam("images_folder", inputDir);
-
   for (int k=0; k<cameras_.size(); ++k)
   {
     std::stringstream strstr;
-    strstr << inputDir + "/pair_" << buf_now << "_" << k << ".jpg";
+    strstr << input_dir_ + "/pair_" << buf_now << "_" << k << ".jpg";
     ROS_INFO_STREAM("Saving an image to " << strstr.str());
     try
     {
@@ -442,7 +435,6 @@ void Calibrator::saveImagePair()
   }
 
   ++buf_now;
-  processing = true;
 }
 
 void Calibrator::readAndProcessImages()
@@ -500,7 +492,6 @@ void Calibrator::readAndProcessImages()
     //visualize
     //cv::imshow("image_rgb_", cameras_[0].image);
     //cv::imshow("image_depth_", cameras_[1].image);
-    cv::waitKey(1);
 
     if (!processing)
       continue;
@@ -523,7 +514,7 @@ void Calibrator::readAndProcessImages()
       if (pose.addImagePair(cameras_[0].image, cameras_[1].image))
       {
         poseProcess("CameraTop_optical_frame");
-        ROS_INFO_STREAM("Added image pair: " << pose.getNumberOfImagePairs());
+        ROS_INFO_STREAM("Image pair: " << pose.getNumberOfImagePairs() << "\n");
       }
     }
     else
