@@ -1,6 +1,7 @@
 #ifndef POSEESTIMATION_HPP
 #define POSEESTIMATION_HPP
 
+#include <opencv2/opencv.hpp>
 #include "opencv2/calib3d/calib3d.hpp"
 
 struct cam_calib{

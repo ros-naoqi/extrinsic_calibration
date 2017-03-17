@@ -1,8 +1,5 @@
 #include "calibration_cameras/pose_estimation.hpp"
 
-//#include <opencv2/highgui/highgui.hpp>
-
-#include "opencv2/legacy/legacy.hpp"
 //Include basic headers
 #include <iostream>
 #include <ctime>
@@ -127,8 +124,8 @@ float PoseEstimation::estimatePose(cam_calib& C1,cam_calib& C2,Pose& pose)
                                    C1.A, C1.d, C2.A, C2.d,
                                    imagesCalibration[0][0].size(),
                                    pose.R, pose.t, pose.E, pose.F,
-                                   cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 1e-6),
-                                   cv::CALIB_FIX_INTRINSIC);
+                                   cv::CALIB_FIX_INTRINSIC,
+                                   cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 1e-6));
 	
 	return pose.rms;
 
