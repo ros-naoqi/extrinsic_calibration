@@ -18,6 +18,8 @@ qicli call ALMotion.wakeUp
 qicli call ALMotion.setAngles "HeadPitch" 0.0 0.3
 ```
 
+* take two post-it (one on the top of enougher) and fix it on the right eye of Pepper (to cover this eye with the camera inside)
+
 * start Naoqi Driver, ensuring that color and IR images are enabled in [share/boot_config.json](http://protolab.aldebaran.com:9000/mummer/naoqi_driver/blob/master/share/boot_config.json)
 ```
 roslaunch naoqi_driver naoqi_driver.launch nao_ip:=<PEPPER_IP>
