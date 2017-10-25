@@ -12,6 +12,15 @@ int main(int argc, char **argv)
 
   ros::Rate rate(10);
 
+  std::cout << std::endl << "Please, choose an operating mode: "
+            << std::endl
+            << "* for data recording: place your calibration pattern in front of the camera"
+            << " and when the pattern is detected, press -s- key"
+            << std::endl
+            << "* for data processing: when you finish with recording, "
+            << "press -c- key to process the recorded data"
+            << std::endl;
+
   while(ros::ok())
   {
     ros::spinOnce();
