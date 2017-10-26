@@ -23,6 +23,7 @@ struct Camera
   cv::Mat image;
   cv::Mat timestamp;
   cam_calib camera_calib_set;
+  bool pattern_detected;
 } ;
 
 class Calibrator

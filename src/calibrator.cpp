@@ -391,7 +391,12 @@ void Calibrator::process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
   {
     for (int i=0; i<cameras_.size(); ++i)
       if (!process_image(cameras_[i].image, i))
+      {
+        cameras_[i].pattern_detected = false;
         return;
+      }
+      else
+        cameras_[i].pattern_detected = true;
     //img_mutex_rgb.unlock();
     //img_mutex_depth.unlock();
   }
@@ -482,6 +487,13 @@ void Calibrator::saveImagePair()
   {
     writeFrames();
     is_initialized_ = true;
+  }
+
+  if (cameras_.size() == 2)
+  if (!cameras_[0].pattern_detected || !cameras_[0].pattern_detected)
+  {
+    ROS_INFO("No calibration pattern was detected");
+    return;
   }
 
   for (int k=0; k<cameras_.size(); ++k)
