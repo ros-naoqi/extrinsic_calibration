@@ -56,14 +56,25 @@ There are two possible ways to applying the extrinsic parameters:
 * using ROS static_transform_publisher
 * updating the position of the camera in the URDF
 
-An example of using static_transform_publisher is shown in register_depth.launch of Naoqi Driver. You can update the values in register_depth.launch in your workspace and then launch it in addition to naoqi_driver:
+#### Using static_transform_publisher
+
+An example of using static_transform_publisher is shown in register_depth.launch of Naoqi Driver. You can update the values in register_depth.launch in your workspace. The order of the values is: x y z yaw pitch roll. Once updted, launch this file in addition to naoqi_driver:
 ```
 roslaunch naoqi_driver naoqi_driver.launch nao_ip:=<PEPPER_IP>
 roslaunch naoqi_driver register_depth.launch
 ```
 
+#### Using URDF
+
 Alternatively, you can update the parameters directly in the URDF file:
 * update RPY values in https://github.com/nlyubova/pepper_robot/blob/master/pepper_description/urdf/pepper1.0_generated_urdf/pepper_sensors.xacro#L23
 * update XYZ values in https://github.com/nlyubova/pepper_robot/blob/master/pepper_description/urdf/pepper1.0_generated_urdf/pepper_sensors.xacro#L120
-* generate a new pepper.URDF file
+* generate a new pepper.URDF file, for example
+
+```
+roscd pepper_description
+cd urdf/pepper1.0_generated_urdf/
+rosrun xacro xacro.py -o pepper.urdf pepper_robot.xacro
+```
+
 * start Naoqi Driver as usual
