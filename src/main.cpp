@@ -8,14 +8,19 @@ int main(int argc, char **argv)
 
   Calibrator calib;
 
-  uchar key_pressed;
+  cv::namedWindow("image_rgb", cv::WINDOW_AUTOSIZE);
+  cv::namedWindow("image_ir", cv::WINDOW_AUTOSIZE);
+  cv::waitKey(1);
 
   ros::Rate rate(10);
 
-  std::cout << std::endl << "Please, choose an operating mode: "
+  std::cout << std::endl << "Please, ensure that you see an image "
+            << "in -image_rgb- window and press a key "
+            << "to choose an operating mode:"
             << std::endl
-            << "* for data recording: place your calibration pattern in front of the camera"
-            << " and when the pattern is detected, press -s- key"
+            << "* for data recording: place your calibration pattern "
+            << "in front of the camera "
+            << "and when the pattern is detected, press -s- key"
             << std::endl
             << "* for data processing: when you finish with recording, "
             << "press -c- key to process the recorded data"
@@ -25,6 +30,7 @@ int main(int argc, char **argv)
   {
     ros::spinOnce();
 
+    uchar key_pressed;
     if ((key_pressed = cv::waitKey(10)) != -1)
     {
       if (key_pressed == 'r')

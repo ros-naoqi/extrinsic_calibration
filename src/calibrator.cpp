@@ -60,18 +60,14 @@ Calibrator::Calibrator():
   std::string topic_depth_img = "/naoqi_driver_node/camera/ir/image_raw";
   nh_.getParam("depth_img_topic", topic_depth_img);
   ROS_INFO_STREAM("topic_depth_img: " << topic_depth_img);
-//  sub_img_ir = it_.subscribe(topic_depth_img.c_str(), 10, &Calibrator::process_, this);
 
   std::string topic_rgb_img = "/naoqi_driver_node/camera/front/image_raw";
   nh_.getParam("rgb_img_topic", topic_rgb_img);
   ROS_INFO_STREAM("topic_rgb_img: " << topic_rgb_img);
-//  sub_img_rgb = it_.subscribe(topic_rgb_img.c_str(), 10, &Calibrator::process_, this);
 
   subscriber_ir = new message_filters::Subscriber<sensor_msgs::Image>(nh_, topic_depth_img, 1);
   subscriber_rgb = new message_filters::Subscriber<sensor_msgs::Image>(nh_, topic_rgb_img, 1);
 
-/*  sync = new message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image>(*subscriber_rgb, *subscriber_ir, 10);
-  sync->registerCallback(boost::bind(&Calibrator::process_images, this, _1, _2));*/
   sync = new message_filters::Synchronizer<MySyncPolicy>(MySyncPolicy(10), *subscriber_rgb, *subscriber_ir);
   sync->registerCallback(boost::bind(&Calibrator::process_images, this, _1, _2));
 
@@ -171,7 +167,7 @@ bool Calibrator::process_image(const cv::Mat &image, const int &cam_index)
     if (cam_index == 0)
       cv::imshow("image_rgb", image_vis);
     else
-      cv::imshow("image_depth", image_vis);
+      cv::imshow("image_ir", image_vis);
   }
 
   return res;
@@ -340,11 +336,12 @@ void Calibrator::poseProcess(const std::string &frame)
 
     tf::Matrix3x3(pose_depth_to_head.getRotation()).getRPY(roll, pitch, yaw);
 
-    ROS_INFO_STREAM("pose_depth_to_head: \n"
+    ROS_INFO_STREAM("CameraDepth_frame -> Head : "
                     << "XYZ: " << pose_depth_to_head.getOrigin().x() << " "
                     << pose_depth_to_head.getOrigin().y() << " "
-                    << pose_depth_to_head.getOrigin().z() << "\n"
-                    << "RPY: " << -1*roll << " " << pitch << " " << yaw);
+                    << pose_depth_to_head.getOrigin().z());
+    ROS_INFO_STREAM("CameraDepth_optical_frame -> CameraDepth_frame : "
+                    << "RPY: " << -1.0*roll << " " << pitch << " " << yaw);
   }
 }
 

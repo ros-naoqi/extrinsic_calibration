@@ -53,10 +53,8 @@ private:
   cv::Mat imageTo8U(const cv::Mat &image, const std::string &encoding);
 
   ros::NodeHandle nh_;
-  //image_transport::ImageTransport it_;
 
   message_filters::Synchronizer<MySyncPolicy> *sync;
-  //message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> *sync;
 
   message_filters::Subscriber<sensor_msgs::Image> *subscriber_rgb, *subscriber_ir;
   ros::Subscriber sub_cam_rgb_info_, sub_cam_depth_info_;
