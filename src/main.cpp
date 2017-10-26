@@ -44,11 +44,12 @@ int main(int argc, char **argv)
       else if (key_pressed == 'c')
       {
         calib.readAndProcessImages();
+        ros::shutdown();
       }
     }
     rate.sleep();
   }
 
-  ros::shutdown();  
+  ros::shutdown();
   return 0;
 }

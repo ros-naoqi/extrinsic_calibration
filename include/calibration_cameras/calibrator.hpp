@@ -52,6 +52,12 @@ private:
 
   cv::Mat imageTo8U(const cv::Mat &image, const std::string &encoding);
 
+  //write frames to a file
+  void writeFrames();
+
+  //read frames from a file
+  bool readFrames();
+
   ros::NodeHandle nh_;
 
   message_filters::Synchronizer<MySyncPolicy> *sync;
@@ -76,6 +82,15 @@ private:
   tf::TransformListener listener_;
 
   std::string input_dir_;
+
+  //are the frames initialized
+  bool is_initialized_;
+
+  //filename to write frames
+  std::string file_frames_;
+
+  //camera frames
+  std::vector<std::string> frames_;
 };
 
 #endif // CALIBRATOR_HPP

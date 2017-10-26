@@ -6,6 +6,10 @@
 
 #include "dirent.h"
 
+#include <iostream>
+#include <fstream>
+#include <string>
+
 #include "calibration_cameras/calibrator.hpp"
 
 Calibrator::Calibrator():
@@ -16,10 +20,15 @@ Calibrator::Calibrator():
   processing(false),
   px_num(1),
   buf_now(0),
-  input_dir_("images")
+  input_dir_("images"),
+  file_frames_("frames.txt"),
+  is_initialized_(false)
 {
   cameras_.reserve(n_cameras);
   cameras_.resize(n_cameras);
+
+  frames_.reserve(n_cameras);
+  frames_.resize(n_cameras);
 
   cameras_[0].camera_calib_set.A = (cv::Mat_<double>(3, 3) <<
                                     303.608524, 0.0, 164.350243,
@@ -89,6 +98,8 @@ Calibrator::Calibrator():
 
 void Calibrator::process_cam_info(const sensor_msgs::CameraInfoConstPtr& infoMsg, const int &cam_index)
 {
+  frames_.at(cam_index) = infoMsg->header.frame_id;
+
   if (cam_index < cameras_.size())
     cameras_[cam_index].camera_calib_set.A = (cv::Mat_<double>(3, 3) <<
                        infoMsg->K[0], infoMsg->K[1], infoMsg->K[2],
@@ -281,6 +292,7 @@ void Calibrator::poseProcess(const std::string &frame)
     float rms = pose.estimatePose(cameras_[0].camera_calib_set,
                                   cameras_[1].camera_calib_set,
                                   pose_res);
+
     ROS_INFO_STREAM("Pose estimation error: " << rms);
     /*ROS_INFO_STREAM("t: " << pose_res.t.at<double>(0,0)
                     << " " << pose_res.t.at<double>(1,0)
@@ -308,8 +320,6 @@ void Calibrator::poseProcess(const std::string &frame)
 
     double yaw = atan2(pose_res.R.at<double>(1,0),
                        pose_res.R.at<double>(0,0));
-    //ROS_INFO_STREAM("RPY: " << roll << " " << pitch << " " << yaw);
-
 
     //transform in quaternion
     tf::Quaternion pose_quat;
@@ -323,10 +333,11 @@ void Calibrator::poseProcess(const std::string &frame)
         ros::Time(0), frame);
 
     //transform the pose to head frame
+    std::string frame_head("Head");
     tf::Stamped<tf::Pose> pose_depth_to_head;
     try
     {
-      listener_.transformPose("Head", pose_depth_to_rgb, pose_depth_to_head);
+      listener_.transformPose(frame_head, pose_depth_to_rgb, pose_depth_to_head);
     }
     catch (tf::TransformException ex)
     {
@@ -335,22 +346,22 @@ void Calibrator::poseProcess(const std::string &frame)
 
     tf::Matrix3x3(pose_depth_to_head.getRotation()).getRPY(roll, pitch, yaw);
 
-    ROS_INFO_STREAM("CameraDepth_frame -> Head : "
+    ROS_INFO_STREAM(frames_.at(1) << " to " << frame_head << " : "
                     << "XYZ: " << pose_depth_to_head.getOrigin().x() << " "
                     << pose_depth_to_head.getOrigin().y() << " "
                     << pose_depth_to_head.getOrigin().z());
-    ROS_INFO_STREAM("CameraDepth_optical_frame -> CameraDepth_frame : "
+    ROS_INFO_STREAM(frames_.at(1) << " to " << frame_head << " : "
                     << "RPY: " << -1.0*roll << " " << pitch << " " << yaw);
 
 
-    //the pose to the RGB frame
+    //transform from Top to Depth
     tf::Matrix3x3(pose_depth_to_rgb.getRotation()).getRPY(roll, pitch, yaw);
 
-    ROS_INFO_STREAM("CameraDepth_optical_frame -> CameraTop_optical_frame : XYZ: "
+    ROS_INFO_STREAM(frames_.at(0) << " to " << frames_.at(1) << " : XYZ: "
                     << pose_depth_to_rgb.getOrigin().x() << " "
                     << pose_depth_to_rgb.getOrigin().y() << " "
                     << pose_depth_to_rgb.getOrigin().z());
-    ROS_INFO_STREAM("CameraDepth_optical_frame -> CameraTop_optical_frame : RPY: "
+    ROS_INFO_STREAM(frames_.at(0) << " to " << frames_.at(1) << " : RPY: "
                     << roll-3.1416 << " " << pitch << " " << yaw);
   }
 }
@@ -358,6 +369,9 @@ void Calibrator::poseProcess(const std::string &frame)
 void Calibrator::process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
                                 const sensor_msgs::ImageConstPtr& msg_depth)
 {
+  if (!is_initialized_)
+    return;
+
   //prepare RGB image
   if (!prepare_rgb(msg_rgb))
     return;
@@ -389,7 +403,7 @@ void Calibrator::process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
   {
     if (pose.addImagePair(cameras_[0].image, cameras_[1].image))
     {
-      poseProcess(msg_rgb->header.frame_id);
+      poseProcess(frames_.at(0));
       ROS_INFO_STREAM("Added image pair: " << pose.getNumberOfImagePairs());
     }
   }
@@ -422,8 +436,51 @@ void Calibrator::saveImagePairs()
   ROS_INFO_STREAM("Writing images is finished");
 }
 
+void Calibrator::writeFrames()
+{
+  ROS_INFO_STREAM("Writing the file " << input_dir_ << "/" << file_frames_);
+  std::ofstream file(input_dir_ + "/" + file_frames_);
+
+  if (!file.is_open())
+  {
+    ROS_INFO_STREAM("File " << input_dir_ << "/" << file_frames_ << " not found");
+    return;
+  }
+
+  for (int i=0; i < frames_.size(); ++i)
+    file << frames_.at(i) << "\n";
+
+  file.close();
+}
+
+bool Calibrator::readFrames()
+{
+  ROS_INFO_STREAM("Reading the file " << input_dir_ << "/" << file_frames_);
+  std::ifstream file(input_dir_ + "/" + file_frames_);
+
+  if (!file.is_open())
+  {
+    ROS_INFO_STREAM("File " << input_dir_ << "/" << file_frames_ << " not found");
+    return false;
+  }
+
+  std::vector<std::string>::iterator i = frames_.begin();
+
+  while (std::getline(file, *i))
+    ++i;
+
+  file.close();
+  return true;
+}
+
 void Calibrator::saveImagePair()
 {
+  if (!is_initialized_)
+  {
+    writeFrames();
+    is_initialized_ = true;
+  }
+
   for (int k=0; k<cameras_.size(); ++k)
   {
     std::stringstream strstr;
@@ -450,6 +507,12 @@ void Calibrator::readAndProcessImages()
   std::string inputDir = "images";
   nh_.getParam("images_folder", inputDir);
   ROS_INFO_STREAM("Reading image folder " << inputDir);
+
+  //read frames
+  if (readFrames())
+    is_initialized_ = true;
+  else
+    return;
 
   DIR *directory = opendir(inputDir.c_str());
   struct dirent *_dirent = NULL;
@@ -520,7 +583,7 @@ void Calibrator::readAndProcessImages()
     {
       if (pose.addImagePair(cameras_[0].image, cameras_[1].image))
       {
-        poseProcess("CameraTop_optical_frame");
+        poseProcess(frames_.at(0));
         ROS_INFO_STREAM("Image pair: " << pose.getNumberOfImagePairs() << "\n");
       }
     }
