@@ -315,8 +315,6 @@ void Calibrator::poseProcess(const std::string &frame)
     tf::Quaternion pose_quat;
     pose_quat.setRPY(roll, pitch, yaw);
 
-    tf::Stamped<tf::Pose> pose_depth_to_head;
-
     tf::Stamped<tf::Pose> pose_depth_to_rgb(
           tf::Pose(pose_quat,
                    tf::Vector3(-pose_res.t.at<double>(0,0),
@@ -324,7 +322,8 @@ void Calibrator::poseProcess(const std::string &frame)
                                -pose_res.t.at<double>(0,2))),
         ros::Time(0), frame);
 
-    //transform the pose
+    //transform the pose to head frame
+    tf::Stamped<tf::Pose> pose_depth_to_head;
     try
     {
       listener_.transformPose("Head", pose_depth_to_rgb, pose_depth_to_head);
@@ -342,6 +341,17 @@ void Calibrator::poseProcess(const std::string &frame)
                     << pose_depth_to_head.getOrigin().z());
     ROS_INFO_STREAM("CameraDepth_optical_frame -> CameraDepth_frame : "
                     << "RPY: " << -1.0*roll << " " << pitch << " " << yaw);
+
+
+    //the pose to the RGB frame
+    tf::Matrix3x3(pose_depth_to_rgb.getRotation()).getRPY(roll, pitch, yaw);
+
+    ROS_INFO_STREAM("CameraDepth_optical_frame -> CameraTop_optical_frame : XYZ: "
+                    << pose_depth_to_rgb.getOrigin().x() << " "
+                    << pose_depth_to_rgb.getOrigin().y() << " "
+                    << pose_depth_to_rgb.getOrigin().z());
+    ROS_INFO_STREAM("CameraDepth_optical_frame -> CameraTop_optical_frame : RPY: "
+                    << roll-3.1416 << " " << pitch << " " << yaw);
   }
 }
 
