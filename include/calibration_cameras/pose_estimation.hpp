@@ -21,11 +21,22 @@ class PoseEstimation
 public:
   PoseEstimation();
   void initEstimation(const int &n_cam);
-  void setPatternSize(const int &w, const int &h, const float &dim);
+
+  void setPatternSize(const int &w,
+                      const int &h,
+                      const float &dim);
+
   bool checkCheckerboardPoints(cv::Mat &image);
-  bool addImagePair(cv::Mat &img_1, cv::Mat &img_2);
-  float estimatePose(cam_calib& C1, cam_calib& C2, Pose &pose);
+
+  bool addImagePair(cv::Mat &img_1,
+                    cv::Mat &img_2);
+
+  float estimatePose(cam_calib& C1,
+                     cam_calib& C2,
+                     Pose &pose);
+
   int getNumberOfImagePairs();
+
   std::vector<std::vector<cv::Mat> > getImagePairs();
 
 protected:

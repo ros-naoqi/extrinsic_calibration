@@ -99,7 +99,8 @@ Calibrator::Calibrator():
   nh_.getParam("images_folder", input_dir_);
 }
 
-void Calibrator::process_cam_info(const sensor_msgs::CameraInfoConstPtr& infoMsg, const int &cam_index)
+void Calibrator::process_cam_info(const sensor_msgs::CameraInfoConstPtr& infoMsg,
+                                  const int &cam_index)
 {
   frames_.at(cam_index) = infoMsg->header.frame_id;
 
@@ -153,7 +154,8 @@ float Calibrator::getSharpness(const cv::Mat &image)
   return sharpness;
 }
 
-bool Calibrator::process_image(const cv::Mat &image, const int &cam_index)
+bool Calibrator::process_image(const cv::Mat &image,
+                               const int &cam_index)
 {
   if (cam_index >= cameras_.size())
     return false;
@@ -220,7 +222,8 @@ bool Calibrator::prepare_depth(const sensor_msgs::ImageConstPtr& msg)
   return true;
 }
 
-cv::Mat Calibrator::imageTo8U(const cv::Mat &image, const std::string &encoding)
+cv::Mat Calibrator::imageTo8U(const cv::Mat &image,
+                              const std::string &encoding)
 {
   cv::Mat res;
   try

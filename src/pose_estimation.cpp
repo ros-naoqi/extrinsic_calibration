@@ -11,7 +11,9 @@ PoseEstimation::PoseEstimation():
 {
 }
 
-void PoseEstimation::setPatternSize(const int &w, const int &h, const float &d)
+void PoseEstimation::setPatternSize(const int &w,
+                                    const int &h,
+                                    const float &d)
 {
   pattern_size.width = w;
   pattern_size.height = h;
@@ -36,7 +38,9 @@ bool PoseEstimation::checkCheckerboardPoints(cv::Mat &image)
   return false;
 }
 
-bool getCheckerboardPoints(cv::Mat &image, std::vector<cv::Point2f>& imagePoints, cv::Size &pattern_size)
+bool getCheckerboardPoints(cv::Mat &image,
+                           std::vector<cv::Point2f>& imagePoints,
+                           cv::Size &pattern_size)
 {
   // WE NEED TO GET GRAYSCALE IMAGE
   bool found_checker_cl = cv::findChessboardCorners(image, pattern_size, imagePoints, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS + cv::CALIB_CB_FAST_CHECK);
@@ -77,7 +81,8 @@ void PoseEstimation::initEstimation(const int &n_cameras)
   }
 }
 
-bool PoseEstimation::addImagePair(cv::Mat &img_c1, cv::Mat &img_c2)
+bool PoseEstimation::addImagePair(cv::Mat &img_c1,
+                                  cv::Mat &img_c2)
 {
   //std::cout << "Add image pair" << std::endl;
   std::vector<cv::Point2f> imagePoints_1;
@@ -114,7 +119,9 @@ bool PoseEstimation::addImagePair(cv::Mat &img_c1, cv::Mat &img_c2)
   return false;
 }
 
-float PoseEstimation::estimatePose(cam_calib& C1,cam_calib& C2,Pose& pose)
+float PoseEstimation::estimatePose(cam_calib& C1,
+                                   cam_calib& C2,
+                                   Pose& pose)
 {
   if (getNumberOfImagePairs() > 0)
     pose.rms = cv::stereoCalibrate(worldCheckerboardPoints,

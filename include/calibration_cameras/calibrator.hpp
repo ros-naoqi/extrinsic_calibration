@@ -39,14 +39,20 @@ public:
 private:
   void poseProcess(const std::string &frame);
 
-  void process_cam_info(const sensor_msgs::CameraInfoConstPtr& infoMsg, const int &cam_index);
+  void process_cam_info(const sensor_msgs::CameraInfoConstPtr& infoMsg,
+                        const int &cam_index);
+
   void process_cam_depth_info(const sensor_msgs::CameraInfoConstPtr& infoMsg);
+
   void process_cam_rgb_info(const sensor_msgs::CameraInfoConstPtr& infoMsg);
 
   bool process_image(const cv::Mat &image, const int &cam_index);
-  void process_images(const sensor_msgs::ImageConstPtr& msg_rgb, const sensor_msgs::ImageConstPtr& msg_depth);
+
+  void process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
+                      const sensor_msgs::ImageConstPtr& msg_depth);
 
   bool prepare_rgb(const sensor_msgs::ImageConstPtr& msg);
+
   bool prepare_depth(const sensor_msgs::ImageConstPtr& msg);
 
   float getSharpness(const cv::Mat &image);
@@ -64,6 +70,7 @@ private:
   message_filters::Synchronizer<MySyncPolicy> *sync;
 
   message_filters::Subscriber<sensor_msgs::Image> *subscriber_rgb, *subscriber_ir;
+
   ros::Subscriber sub_cam_rgb_info_, sub_cam_depth_info_;
 
   PoseEstimation pose;
