@@ -26,11 +26,11 @@ int main(int argc, char **argv)
             << "press -c- key to process the recorded data"
             << std::endl;
 
+  uchar key_pressed;
   while(ros::ok())
   {
     ros::spinOnce();
 
-    uchar key_pressed;
     if ((key_pressed = cv::waitKey(10)) != -1)
     {
       if (key_pressed == 'r')
