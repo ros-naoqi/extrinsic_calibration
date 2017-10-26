@@ -375,9 +375,6 @@ void Calibrator::poseProcess(const std::string &frame)
 void Calibrator::process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
                                 const sensor_msgs::ImageConstPtr& msg_depth)
 {
-  if (!is_initialized_)
-    return;
-
   //prepare RGB image
   if (!prepare_rgb(msg_rgb))
     return;
