@@ -30,6 +30,9 @@ Calibrator::Calibrator():
   frames_.reserve(n_cameras);
   frames_.resize(n_cameras);
 
+  frames_[0] = "CameraTop_optical_frame";
+  frames_[1] = "CameraDepth_optical_frame";
+
   cameras_[0].camera_calib_set.A = (cv::Mat_<double>(3, 3) <<
                                     303.608524, 0.0, 164.350243,
                                     0.0, 303.307367, 124.363650,
@@ -509,10 +512,7 @@ void Calibrator::readAndProcessImages()
   ROS_INFO_STREAM("Reading image folder " << inputDir);
 
   //read frames
-  if (readFrames())
-    is_initialized_ = true;
-  else
-    return;
+  readFrames();
 
   DIR *directory = opendir(inputDir.c_str());
   struct dirent *_dirent = NULL;
