@@ -18,12 +18,13 @@ int main(int argc, char **argv)
             << "in -image_rgb- window and press a key "
             << "to choose an operating mode:"
             << std::endl
-            << "* for data recording: place your calibration pattern "
-            << "in front of the camera "
-            << "and when the pattern is detected, press -s- key"
+            << "* press -s- key to save an image pair: "
+            << "place your calibration pattern in front of the robot "
+            << "and save an image pair when the pattern is detected; "
+            << "you should save it at different positions, orientations, scales "
+            << "(at least 20 pairs or more)"
             << std::endl
-            << "* for data processing: when you finish with recording, "
-            << "press -c- key to process the recorded data"
+            << "* press -c- key to process the recorded data"
             << std::endl;
 
   uchar key_pressed;
@@ -33,11 +34,11 @@ int main(int argc, char **argv)
 
     if ((key_pressed = cv::waitKey(10)) != -1)
     {
-      if (key_pressed == 'r')
+      /*if (key_pressed == 'r')
       {
         calib.saveImagePairs();
       }
-      else if (key_pressed == 's')
+      else*/ if (key_pressed == 's')
       {
         calib.saveImagePair();
       }
