@@ -544,6 +544,14 @@ bool Calibrator::readImage(const std::string &file_name,
 
 void Calibrator::readAndProcessImages()
 {
+  if (!listener_.canTransform(frames_.at(1),
+                              frames_.at(0),
+                              ros::Time(0)))
+  {
+    ROS_ERROR_INFO("Please, start Naoqi Driver at first");
+    return;
+  }
+
   processing_ = true;
 
   //override frames if found in recordings
