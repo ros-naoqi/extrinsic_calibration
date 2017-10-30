@@ -20,7 +20,7 @@ class PoseEstimation
 {
 public:
   PoseEstimation();
-  void initEstimation(const int &n_cam);
+  void init(const int &n_cam);
 
   void setPatternSize(const int &w,
                       const int &h,
@@ -40,11 +40,20 @@ public:
   std::vector<std::vector<cv::Mat> > getImagePairs();
 
 protected:
-  float pattern_square_size;
-  cv::Size pattern_size;
-  std::vector<std::vector<cv::Point3f> > worldCheckerboardPoints;
-  std::vector<std::vector<std::vector<cv::Point2f> > > imageCheckerboradPoints;
-  std::vector<std::vector<cv::Mat> > imagesCalibration;
+  //pattern square size
+  float pattern_square_size_;
+
+  //pattern size
+  cv::Size pattern_size_;
+
+  //coordinates of points in the world space
+  std::vector<std::vector<cv::Point3f> > world_points;
+
+  //coordinates of points in the image space
+  std::vector<std::vector<std::vector<cv::Point2f> > > image_points;
+
+  //images for calibration
+  std::vector<std::vector<cv::Mat> > image_pairs;
 };
 
 #endif // POSEESTIMATION_HPP

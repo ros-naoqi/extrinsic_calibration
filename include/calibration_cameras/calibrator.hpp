@@ -31,33 +31,42 @@ class Calibrator
 public:
   Calibrator();
 
+  //save image pairs continuously
   void saveImagePairs();
+
+  //save a single image pair
   void saveImagePair();
 
+  //read and process recorded image pairs
   void readAndProcessImages();
 
 private:
   void poseProcess(const std::string &frame);
 
-  void process_cam_info(const sensor_msgs::CameraInfoConstPtr& infoMsg,
-                        const int &cam_index);
+  void processCameraInfo(const sensor_msgs::CameraInfoConstPtr& infoMsg,
+                         const int &cam_index);
 
-  void process_cam_depth_info(const sensor_msgs::CameraInfoConstPtr& infoMsg);
+  void processDepthInfo(const sensor_msgs::CameraInfoConstPtr& infoMsg);
 
-  void process_cam_rgb_info(const sensor_msgs::CameraInfoConstPtr& infoMsg);
+  void processRgbInfo(const sensor_msgs::CameraInfoConstPtr& infoMsg);
 
-  bool process_image(const cv::Mat &image, const int &cam_index);
+  //process a single image
+  bool processImage(const cv::Mat &image,
+                    const int &cam_index);
 
-  void process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
-                      const sensor_msgs::ImageConstPtr& msg_depth);
+  //process an image pair
+  void processImagePair(const sensor_msgs::ImageConstPtr& msg_rgb,
+                        const sensor_msgs::ImageConstPtr& msg_depth);
 
-  bool prepare_rgb(const sensor_msgs::ImageConstPtr& msg);
+  bool prepareRgb(const sensor_msgs::ImageConstPtr& msg);
 
-  bool prepare_depth(const sensor_msgs::ImageConstPtr& msg);
+  bool prepareDepth(const sensor_msgs::ImageConstPtr& msg);
 
-  float getSharpness(const cv::Mat &image);
+  float getSharpness(const cv::Mat &image,
+                     const int px_num);
 
-  cv::Mat imageTo8U(const cv::Mat &image, const std::string &encoding);
+  cv::Mat imageTo8U(const cv::Mat &image,
+                    const std::string &encoding);
 
   //write frames to a file
   void writeFrames();
@@ -65,30 +74,51 @@ private:
   //read frames from a file
   bool readFrames();
 
+  //node handle
   ros::NodeHandle nh_;
 
-  message_filters::Synchronizer<MySyncPolicy> *sync;
+  message_filters::Synchronizer<MySyncPolicy> *sync_;
 
-  message_filters::Subscriber<sensor_msgs::Image> *subscriber_rgb, *subscriber_ir;
+  //subscriber to RGB image
+  message_filters::Subscriber<sensor_msgs::Image> *subscriber_rgb_;
 
-  ros::Subscriber sub_cam_rgb_info_, sub_cam_depth_info_;
+  //subscriber to depth image
+  message_filters::Subscriber<sensor_msgs::Image> *subscriber_ir_;
 
-  PoseEstimation pose;
+  //subscriber to RGB camera info
+  ros::Subscriber sub_cam_rgb_info_;
 
+  //subscriber to depth camera info
+  ros::Subscriber sub_cam_depth_info_;
+
+  //instance of an pose estimation class
+  PoseEstimation pose_estimator_;
+
+  //storage of images from cameras
   std::vector<Camera> cameras_;
 
-  int n_cameras;
-  int buf_size;
-  bool processing;
-  int px_num;
-  int buf_now;
+  //number of cameras
+  int nbr_cameras_;
 
-  std::mutex img_mutex_rgb;
-  std::mutex img_mutex_depth;
+  //maximum number of image pairs to record
+  int buf_size_;
+
+  //should we process an image or not
+  bool processing_;
+
+  //current number of recorded image pairs
+  int buf_now_;
+
+  //mutex for the rgb image
+  std::mutex img_mutex_rgb_;
+
+  //mutex for the depth image
+  std::mutex img_mutex_depth_;
 
   //transform listener
   tf::TransformListener listener_;
 
+  //input directory to save/read image pairs
   std::string input_dir_;
 
   //are the frames initialized
@@ -97,7 +127,7 @@ private:
   //filename to write frames
   std::string file_frames_;
 
-  //camera frames
+  //cameras frames
   std::vector<std::string> frames_;
 };
 

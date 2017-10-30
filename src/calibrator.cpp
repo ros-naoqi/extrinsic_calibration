@@ -14,21 +14,19 @@
 
 Calibrator::Calibrator():
   nh_("~"),
-  //it_(nh_),
-  n_cameras(2),
-  buf_size(40),
-  processing(false),
-  px_num(1),
-  buf_now(0),
+  nbr_cameras_(2),
+  buf_size_(40),
+  processing_(false),
+  buf_now_(0),
   input_dir_("images"),
   file_frames_("frames.txt"),
   is_initialized_(false)
 {
-  cameras_.reserve(n_cameras);
-  cameras_.resize(n_cameras);
+  cameras_.reserve(nbr_cameras_);
+  cameras_.resize(nbr_cameras_);
 
-  frames_.reserve(n_cameras);
-  frames_.resize(n_cameras);
+  frames_.reserve(nbr_cameras_);
+  frames_.resize(nbr_cameras_);
 
   frames_[0] = "CameraTop_optical_frame";
   frames_[1] = "CameraDepth_optical_frame";
@@ -57,17 +55,17 @@ Calibrator::Calibrator():
                                     0.016381,
                                     0);
 
-  pose.initEstimation(n_cameras);
+  pose_estimator_.init(nbr_cameras_);
 
-  std::string topic_cam_depth_info = "/naoqi_driver_node/camera/depth/camera_info";
-  nh_.getParam("camera_info_depth_topic", topic_cam_depth_info);
-  ROS_INFO_STREAM("camera_info_depth_topic: " << topic_cam_depth_info);
-  sub_cam_depth_info_ = nh_.subscribe(topic_cam_depth_info.c_str(), 1, &Calibrator::process_cam_depth_info, this);
+  std::string topic_depth_info = "/naoqi_driver_node/camera/depth/camera_info";
+  nh_.getParam("camera_info_depth_topic", topic_depth_info);
+  ROS_INFO_STREAM("camera_info_depth_topic: " << topic_depth_info);
+  sub_cam_depth_info_ = nh_.subscribe(topic_depth_info.c_str(), 1, &Calibrator::processDepthInfo, this);
 
-  std::string topic_cam_rgb_info = "/naoqi_driver_node/camera/front/camera_info";
-  nh_.getParam("camera_info_rgb_topic", topic_cam_rgb_info);
-  ROS_INFO_STREAM("camera_info_rgb_topic: " << topic_cam_rgb_info);
-  sub_cam_rgb_info_ = nh_.subscribe(topic_cam_rgb_info.c_str(), 1, &Calibrator::process_cam_rgb_info, this);
+  std::string topic_rgb_info = "/naoqi_driver_node/camera/front/camera_info";
+  nh_.getParam("camera_info_rgb_topic", topic_rgb_info);
+  ROS_INFO_STREAM("camera_info_rgb_topic: " << topic_rgb_info);
+  sub_cam_rgb_info_ = nh_.subscribe(topic_rgb_info.c_str(), 1, &Calibrator::processRgbInfo, this);
 
   std::string topic_depth_img = "/naoqi_driver_node/camera/ir/image_raw";
   nh_.getParam("depth_img_topic", topic_depth_img);
@@ -77,11 +75,11 @@ Calibrator::Calibrator():
   nh_.getParam("rgb_img_topic", topic_rgb_img);
   ROS_INFO_STREAM("topic_rgb_img: " << topic_rgb_img);
 
-  subscriber_ir = new message_filters::Subscriber<sensor_msgs::Image>(nh_, topic_depth_img, 1);
-  subscriber_rgb = new message_filters::Subscriber<sensor_msgs::Image>(nh_, topic_rgb_img, 1);
+  subscriber_ir_ = new message_filters::Subscriber<sensor_msgs::Image>(nh_, topic_depth_img, 1);
+  subscriber_rgb_ = new message_filters::Subscriber<sensor_msgs::Image>(nh_, topic_rgb_img, 1);
 
-  sync = new message_filters::Synchronizer<MySyncPolicy>(MySyncPolicy(10), *subscriber_rgb, *subscriber_ir);
-  sync->registerCallback(boost::bind(&Calibrator::process_images, this, _1, _2));
+  sync_ = new message_filters::Synchronizer<MySyncPolicy>(MySyncPolicy(10), *subscriber_rgb_, *subscriber_ir_);
+  sync_->registerCallback(boost::bind(&Calibrator::processImagePair, this, _1, _2));
 
   //initialize the poseEstimation class
   int w_pattern(0);
@@ -94,13 +92,13 @@ Calibrator::Calibrator():
   ROS_INFO_STREAM("pattern_rows: " << h_pattern);
   ROS_INFO_STREAM("pattern_size: " << d_pattern);
   ROS_INFO_STREAM("pattern_size: " << d_pattern);
-  pose.setPatternSize(w_pattern, h_pattern, d_pattern);
+  pose_estimator_.setPatternSize(w_pattern, h_pattern, d_pattern);
 
   nh_.getParam("images_folder", input_dir_);
 }
 
-void Calibrator::process_cam_info(const sensor_msgs::CameraInfoConstPtr& infoMsg,
-                                  const int &cam_index)
+void Calibrator::processCameraInfo(const sensor_msgs::CameraInfoConstPtr& infoMsg,
+                                   const int &cam_index)
 {
   frames_.at(cam_index) = infoMsg->header.frame_id;
 
@@ -119,23 +117,24 @@ void Calibrator::process_cam_info(const sensor_msgs::CameraInfoConstPtr& infoMsg
                         infoMsg->D[4]);
 }
 
-void Calibrator::process_cam_rgb_info(const sensor_msgs::CameraInfoConstPtr& infoMsg)
+void Calibrator::processRgbInfo(const sensor_msgs::CameraInfoConstPtr& infoMsg)
 {
-  process_cam_info(infoMsg, 0);
+  processCameraInfo(infoMsg, 0);
 
   //unsubscribe from the topic
   sub_cam_rgb_info_.shutdown();
 }
 
-void Calibrator::process_cam_depth_info(const sensor_msgs::CameraInfoConstPtr& infoMsg)
+void Calibrator::processDepthInfo(const sensor_msgs::CameraInfoConstPtr& infoMsg)
 {
-  process_cam_info(infoMsg, 1);
+  processCameraInfo(infoMsg, 1);
 
   //unsubscribe from the topic
   sub_cam_depth_info_.shutdown();
 }
 
-float Calibrator::getSharpness(const cv::Mat &image)
+float Calibrator::getSharpness(const cv::Mat &image,
+                               const int px_num)
 {
   //Convert image using Canny
   cv::Mat edges;
@@ -148,14 +147,15 @@ float Calibrator::getSharpness(const cv::Mat &image)
   //< 1.5 = blurred, in movement
   //de 1.5 à 6 = acceptable
   //> 6 =stable, sharp
-  float sharpness = static_cast<float>(nCountCanny) * 1000.0f / static_cast<float>(px_num);
+  float sharpness = static_cast<float>(nCountCanny) * 1000.0f
+          / static_cast<float>(px_num);
 
   ROS_INFO_STREAM("sharpness= " << sharpness);
   return sharpness;
 }
 
-bool Calibrator::process_image(const cv::Mat &image,
-                               const int &cam_index)
+bool Calibrator::processImage(const cv::Mat &image,
+                              const int &cam_index)
 {
   if (cam_index >= cameras_.size())
     return false;
@@ -165,7 +165,7 @@ bool Calibrator::process_image(const cv::Mat &image,
   image.copyTo(image_vis);
   try
   {
-    if (pose.checkCheckerboardPoints(image_vis))
+    if (pose_estimator_.checkCheckerboardPoints(image_vis))
     {
       //if (verbose)
         //ROS_INFO_STREAM("checkerboard found in " << cam_index);
@@ -177,6 +177,7 @@ bool Calibrator::process_image(const cv::Mat &image,
      const char* err_msg = e.what();
      ROS_ERROR(err_msg);
    }
+
   //visualize
   if (!image_vis.empty())
   {
@@ -189,7 +190,7 @@ bool Calibrator::process_image(const cv::Mat &image,
   return res;
 }
 
-bool Calibrator::prepare_depth(const sensor_msgs::ImageConstPtr& msg)
+bool Calibrator::prepareDepth(const sensor_msgs::ImageConstPtr& msg)
 {
   int cam_index = 1;
 
@@ -204,8 +205,7 @@ bool Calibrator::prepare_depth(const sensor_msgs::ImageConstPtr& msg)
     return false;
   }
 
-  /*if (getSharpness(cv_ptr->image) < 1.5)
-    return false;*/
+  int px_num = 1;
 
   if (cameras_[cam_index].image.empty())
   {
@@ -213,10 +213,13 @@ bool Calibrator::prepare_depth(const sensor_msgs::ImageConstPtr& msg)
      px_num = msg->height * msg->width;
   }
 
-  if (img_mutex_depth.try_lock())
+  /*if (getSharpness(cv_ptr->image, px_num) < 1.5)
+    return false;*/
+
+  if (img_mutex_depth_.try_lock())
   {
     cameras_[cam_index].image = imageTo8U(cv_ptr->image, msg->encoding);
-    img_mutex_depth.unlock();
+    img_mutex_depth_.unlock();
   }
 
   return true;
@@ -258,7 +261,7 @@ cv::Mat Calibrator::imageTo8U(const cv::Mat &image,
   return res;
 }
 
-bool Calibrator::prepare_rgb(const sensor_msgs::ImageConstPtr& msg)
+bool Calibrator::prepareRgb(const sensor_msgs::ImageConstPtr& msg)
 {
   int cam_index = 0;
 
@@ -279,10 +282,10 @@ bool Calibrator::prepare_rgb(const sensor_msgs::ImageConstPtr& msg)
   if (cameras_[cam_index].image.empty())
      cameras_[cam_index].image.create(cv::Size(msg->height, msg->width), CV_8UC1);
 
-  if (img_mutex_rgb.try_lock())
+  if (img_mutex_rgb_.try_lock())
   {
     cv::cvtColor(cv_ptr->image, cameras_[cam_index].image, CV_BGR2GRAY);
-    img_mutex_rgb.unlock();
+    img_mutex_rgb_.unlock();
   }
 
   return true;
@@ -290,14 +293,14 @@ bool Calibrator::prepare_rgb(const sensor_msgs::ImageConstPtr& msg)
 
 void Calibrator::poseProcess(const std::string &frame)
 {
-  if (pose.getNumberOfImagePairs() > 0)
+  if (pose_estimator_.getNumberOfImagePairs() > 0)
   {
     //Perform estimation of extrinsic parameters
     Pose pose_res;
 
-    float rms = pose.estimatePose(cameras_[0].camera_calib_set,
-                                  cameras_[1].camera_calib_set,
-                                  pose_res);
+    float rms = pose_estimator_.estimatePose(cameras_[0].camera_calib_set,
+                                             cameras_[1].camera_calib_set,
+                                             pose_res);
 
     ROS_INFO_STREAM("Pose estimation error: " << rms);
     /*ROS_INFO_STREAM("t: " << pose_res.t.at<double>(0,0)
@@ -372,15 +375,15 @@ void Calibrator::poseProcess(const std::string &frame)
   }
 }
 
-void Calibrator::process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
-                                const sensor_msgs::ImageConstPtr& msg_depth)
+void Calibrator::processImagePair(const sensor_msgs::ImageConstPtr& msg_rgb,
+                                  const sensor_msgs::ImageConstPtr& msg_depth)
 {
   //prepare RGB image
-  if (!prepare_rgb(msg_rgb))
+  if (!prepareRgb(msg_rgb))
     return;
 
   //prepare depth image
-  if (!prepare_depth(msg_depth))
+  if (!prepareDepth(msg_depth))
     return;
 
   //cv::imshow("image_rgb_", cameras_[0].image);
@@ -390,7 +393,7 @@ void Calibrator::process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
   //if (img_mutex_rgb.try_lock() && img_mutex_depth.try_lock())
   {
     for (int i=0; i<cameras_.size(); ++i)
-      if (!process_image(cameras_[i].image, i))
+      if (!processImage(cameras_[i].image, i))
       {
         cameras_[i].pattern_detected = false;
         return;
@@ -401,39 +404,39 @@ void Calibrator::process_images(const sensor_msgs::ImageConstPtr& msg_rgb,
     //img_mutex_depth.unlock();
   }
 
-  if (!processing)
+  if (!processing_)
     return;
 
   //cv::imshow("image_rgb_", cameras_[0].image);
   //cv::imshow("image_depth_", cameras_[1].image);
 
-  if (pose.getNumberOfImagePairs() <= buf_size)
+  if (pose_estimator_.getNumberOfImagePairs() <= buf_size_)
   {
-    if (pose.addImagePair(cameras_[0].image, cameras_[1].image))
+    if (pose_estimator_.addImagePair(cameras_[0].image, cameras_[1].image))
     {
       poseProcess(frames_.at(0));
-      ROS_INFO_STREAM("Added image pair: " << pose.getNumberOfImagePairs());
+      ROS_INFO_STREAM("Added image pair: " << pose_estimator_.getNumberOfImagePairs());
     }
   }
   else
-    ROS_ERROR_STREAM("Maximum number of image pairs " << buf_size << " achieved");
+    ROS_ERROR_STREAM("Maximum number of image pairs " << buf_size_ << " achieved");
 }
 
 void Calibrator::saveImagePairs()
 {
-  processing = false;
+  processing_ = false;
 
   ROS_INFO_STREAM("Writing images ...");
 
-  if (pose.getImagePairs().size() > 0)
-    for (int i=0; i<pose.getImagePairs()[0].size(); ++i)
-      for (int k=0; k<pose.getImagePairs().size(); ++k)
+  if (pose_estimator_.getImagePairs().size() > 0)
+    for (int i=0; i<pose_estimator_.getImagePairs()[0].size(); ++i)
+      for (int k=0; k<pose_estimator_.getImagePairs().size(); ++k)
       {
         std::stringstream strstr;
         strstr << "pair_" << i << "_" << k << ".jpg";
         try
         {
-          cv::imwrite(strstr.str().c_str(), pose.getImagePairs()[k][i]);
+          cv::imwrite(strstr.str().c_str(), pose_estimator_.getImagePairs()[k][i]);
         }
         catch(cv::Exception &e)
         {
@@ -472,10 +475,14 @@ bool Calibrator::readFrames()
     return false;
   }
 
+  std::string frame;
   std::vector<std::string>::iterator i = frames_.begin();
-
-  while (std::getline(file, *i))
+  while (std::getline(file, frame))
+  {
+    if (i != frames_.end())
+      *i = frame;
     ++i;
+  }
 
   file.close();
   return true;
@@ -499,7 +506,7 @@ void Calibrator::saveImagePair()
   for (int k=0; k<cameras_.size(); ++k)
   {
     std::stringstream strstr;
-    strstr << input_dir_ + "/pair_" << buf_now << "_" << k << ".jpg";
+    strstr << input_dir_ + "/pair_" << buf_now_ << "_" << k << ".jpg";
     ROS_INFO_STREAM("Saving an image to " << strstr.str());
     try
     {
@@ -513,61 +520,59 @@ void Calibrator::saveImagePair()
     }
   }
 
-  ++buf_now;
+  ++buf_now_;
 }
 
 void Calibrator::readAndProcessImages()
 {
-  processing = true;
-  std::string inputDir = "images";
-  nh_.getParam("images_folder", inputDir);
-  ROS_INFO_STREAM("Reading image folder " << inputDir);
+  processing_ = true;
 
   //read frames
   readFrames();
 
-  DIR *directory = opendir(inputDir.c_str());
+  DIR *directory = opendir(input_dir_.c_str());
   struct dirent *_dirent = NULL;
   if(directory == NULL)
   {
-    ROS_INFO_STREAM("Cannot open the Input Folder " << inputDir);
+    ROS_ERROR_STREAM("Cannot open the Input Folder " << input_dir_);
     return;
   }
 
   while((_dirent = readdir(directory)))
   {
-    std::string fileName = inputDir + "/" + std::string(_dirent->d_name);
+    std::string file_name = input_dir_ + "/" + std::string(_dirent->d_name);
 
-    //ROS_INFO_STREAM("Processing " << fileName);
+    //ROS_INFO_STREAM("Processing " << file_name);
 
-    if (fileName.length() <= 5)
+    if (file_name.length() <= 5)
       continue;
 
-    if (static_cast<int>(fileName[fileName.length()-5]-'0') != 0)
+    if (static_cast<int>(file_name[file_name.length()-5]-'0') != 0)
       continue;
 
     //read the RGB image
     if (cameras_[0].image.empty())
     {
-      cv::Mat image_rgb = cv::imread(fileName.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
-      if(image_rgb.empty())
+      cv::Mat image_temp = cv::imread(file_name.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+      if(image_temp.empty())
         continue;
-      cameras_[0].image.create(cv::Size(image_rgb.rows, image_rgb.cols), CV_8UC1);
+      cameras_[0].image.create(cv::Size(image_temp.rows, image_temp.cols), CV_8UC1);
     }
-    cameras_[0].image = cv::imread(fileName.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+    cameras_[0].image = cv::imread(file_name.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
     if(cameras_[0].image.empty())
       continue;
 
     //read the depth image
-    fileName[fileName.length()-5] = '1';
+    std::string file_name_depth(file_name);
+    file_name_depth[file_name_depth.length()-5] = '1';
     if (cameras_[1].image.empty())
     {
-       cv::Mat image_temp = cv::imread(fileName.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+       cv::Mat image_temp = cv::imread(file_name_depth.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
        if(image_temp.empty())
          continue;
        cameras_[1].image.create(cv::Size(image_temp.rows, image_temp.cols), CV_8UC1);
     }
-    cameras_[1].image = cv::imread(fileName.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+    cameras_[1].image = cv::imread(file_name_depth.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
     if(cameras_[1].image.empty())
       continue;
 
@@ -575,32 +580,33 @@ void Calibrator::readAndProcessImages()
     //cv::imshow("image_rgb_", cameras_[0].image);
     //cv::imshow("image_depth_", cameras_[1].image);
 
-    if (!processing)
+    if (!processing_)
       continue;
 
-    bool chessboardfound(true);
+    //check if the pattern found
+    bool chessboard_found(true);
     for (int i=0; i<cameras_.size(); ++i)
     {
-      if (!process_image(cameras_[i].image, i))
+      if (!processImage(cameras_[i].image, i))
       {
+        chessboard_found = false;
         continue;
-        chessboardfound = false;
       }
     }
 
-    if (!chessboardfound)
+    if (!chessboard_found)
       continue;
 
-    if (pose.getNumberOfImagePairs() <= buf_size)
+    if (pose_estimator_.getNumberOfImagePairs() <= buf_size_)
     {
-      if (pose.addImagePair(cameras_[0].image, cameras_[1].image))
+      if (pose_estimator_.addImagePair(cameras_[0].image, cameras_[1].image))
       {
         poseProcess(frames_.at(0));
-        ROS_INFO_STREAM("Image pair: " << pose.getNumberOfImagePairs() << "\n");
+        ROS_INFO_STREAM("Image pair: " << pose_estimator_.getNumberOfImagePairs() << "\n");
       }
     }
     else
-      ROS_ERROR_STREAM("Maximum number of image pairs " << buf_size << " achieved");
+      ROS_ERROR_STREAM("Maximum number of image pairs " << buf_size_ << " achieved");
   }
   closedir(directory);
 }
