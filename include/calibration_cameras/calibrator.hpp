@@ -18,13 +18,37 @@
 
 typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> MySyncPolicy;
 
-struct Camera
+class CameraImage
 {
+public:
+  CameraImage():
+      image(cv::Mat()),
+      timestamp(),
+      camera_calib_set(CameraCalibration()),
+      pattern_detected(false)
+  {}
+
+  bool isEmpty()
+  {
+    if (image.empty())
+      return true;
+    else
+      return false;
+  }
+
+  bool patternDetected()
+  {
+    if (pattern_detected)
+      return true;
+    else
+      return false;
+  }
+
   cv::Mat image;
   cv::Mat timestamp;
-  cam_calib camera_calib_set;
+  CameraCalibration camera_calib_set;
   bool pattern_detected;
-} ;
+};
 
 class Calibrator
 {
@@ -98,7 +122,7 @@ private:
   PoseEstimation pose_estimator_;
 
   //storage of images from cameras
-  std::vector<Camera> cameras_;
+  std::vector<CameraImage> cameras_;
 
   //number of cameras
   int nbr_cameras_;

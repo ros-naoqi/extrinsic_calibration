@@ -350,7 +350,7 @@ void Calibrator::poseProcess()
                     << pose_depth_to_rgb.getOrigin().y() << " "
                     << pose_depth_to_rgb.getOrigin().z());
     ROS_INFO_STREAM(frames_.at(0) << " to " << frames_.at(1) << " : RPY: "
-                    << -1*roll-3.1416 << " " << pitch << " " << yaw);
+                    << std::fabs(roll)-3.1416 << " " << pitch << " " << yaw);
 
     //transform the pose to head frame
     std::string frame_head("Head");
@@ -496,10 +496,18 @@ void Calibrator::saveImagePair()
     is_initialized_ = true;
   }
 
-  if (cameras_.size() == 2)
-  if (!cameras_[0].pattern_detected || !cameras_[0].pattern_detected)
+  if (cameras_.size() < 2)
+    return;
+
+  if (cameras_[0].isEmpty())
   {
-    ROS_INFO("No calibration pattern was detected");
+    ROS_WARN("No image is acquired, check that Naoqi Driver is running.");
+    return;
+  }
+
+  if (!cameras_[0].patternDetected() || !cameras_[1].patternDetected())
+  {
+    ROS_WARN("No calibration pattern was detected.");
     return;
   }
 
@@ -548,7 +556,7 @@ void Calibrator::readAndProcessImages()
                               frames_.at(0),
                               ros::Time(0)))
   {
-    ROS_ERROR_INFO("Please, start Naoqi Driver at first");
+    ROS_ERROR("Please, start Naoqi Driver at first");
     return;
   }
 

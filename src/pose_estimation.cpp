@@ -118,18 +118,14 @@ bool PoseEstimation::addImagePair(cv::Mat &img_c1,
     {
       image_pairs[0].push_back(img_c1.clone());
       image_pairs[1].push_back(img_c2.clone());
-      /*image_pairs[0].resize(image_pairs[0].size()+1);
-      image_pairs[0].back() = img_c1;
-      image_pairs[1].resize(image_pairs[1].size()+1);
-      image_pairs[1].back() = img_c2;*/
     }
     return true;
   }
   return false;
 }
 
-float PoseEstimation::estimatePose(cam_calib& C1,
-                                   cam_calib& C2,
+float PoseEstimation::estimatePose(CameraCalibration& C1,
+                                   CameraCalibration& C2,
                                    Pose& pose)
 {
   if (getNumberOfImagePairs() > 0)

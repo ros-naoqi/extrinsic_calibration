@@ -4,16 +4,34 @@
 #include <opencv2/opencv.hpp>
 #include "opencv2/calib3d/calib3d.hpp"
 
-struct cam_calib{
-	cv::Mat A;
-	cv::Mat d;
+class CameraCalibration
+{
+public:
+  CameraCalibration():
+      A(cv::Mat()),
+      d(cv::Mat())
+  {}
+
+  cv::Mat A;
+  cv::Mat d;
 };
-struct Pose{
-	cv::Mat R;
-	cv::Mat t;
-	cv::Mat E;
-	cv::Mat F;
-	float rms;
+
+class Pose
+{
+public:
+  Pose():
+      R(cv::Mat()),
+      t(cv::Mat()),
+      E(cv::Mat()),
+      F(cv::Mat()),
+      rms(std::numeric_limits<float>::max())
+  {}
+
+  cv::Mat R;
+  cv::Mat t;
+  cv::Mat E;
+  cv::Mat F;
+  float rms;
 };
 
 class PoseEstimation
@@ -31,8 +49,8 @@ public:
   bool addImagePair(cv::Mat &img_1,
                     cv::Mat &img_2);
 
-  float estimatePose(cam_calib& C1,
-                     cam_calib& C2,
+  float estimatePose(CameraCalibration& C1,
+                     CameraCalibration& C2,
                      Pose &pose);
 
   int getNumberOfImagePairs();
