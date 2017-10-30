@@ -25,7 +25,8 @@ public:
       image(cv::Mat()),
       timestamp(),
       camera_calib_set(CameraCalibration()),
-      pattern_detected(false)
+      pattern_detected(false),
+      px_nbr(1)
   {}
 
   bool isEmpty()
@@ -48,6 +49,7 @@ public:
   cv::Mat timestamp;
   CameraCalibration camera_calib_set;
   bool pattern_detected;
+  int px_nbr;
 };
 
 class Calibrator

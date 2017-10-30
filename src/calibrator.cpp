@@ -134,7 +134,7 @@ void Calibrator::processDepthInfo(const sensor_msgs::CameraInfoConstPtr& infoMsg
 }
 
 float Calibrator::getSharpness(const cv::Mat &image,
-                               const int px_num)
+                               const int px_nbr)
 {
   //Convert image using Canny
   cv::Mat edges;
@@ -148,9 +148,9 @@ float Calibrator::getSharpness(const cv::Mat &image,
   //de 1.5 à 6 = acceptable
   //> 6 =stable, sharp
   float sharpness = static_cast<float>(nCountCanny) * 1000.0f
-          / static_cast<float>(px_num);
+          / static_cast<float>(px_nbr);
 
-  ROS_INFO_STREAM("sharpness= " << sharpness);
+  //ROS_INFO_STREAM("sharpness= " << sharpness);
   return sharpness;
 }
 
@@ -205,15 +205,13 @@ bool Calibrator::prepareDepth(const sensor_msgs::ImageConstPtr& msg)
     return false;
   }
 
-  int px_num = 1;
-
   if (cameras_[cam_index].image.empty())
   {
      cameras_[cam_index].image.create(cv::Size(msg->height, msg->width), CV_8UC1);
-     px_num = msg->height * msg->width;
+     cameras_[cam_index].px_nbr = msg->height * msg->width;
   }
 
-  /*if (getSharpness(cv_ptr->image, px_num) < 1.5)
+  /*if (getSharpness(cv_ptr->image, cameras_[cam_index].px_nbr) < 1.5)
     return false;*/
 
   if (img_mutex_depth_.try_lock())
@@ -276,11 +274,14 @@ bool Calibrator::prepareRgb(const sensor_msgs::ImageConstPtr& msg)
     return false;
   }
 
-  /*if (getSharpness(cv_ptr->image) < 1.5)
-    return false;*/
-
   if (cameras_[cam_index].image.empty())
+  {
      cameras_[cam_index].image.create(cv::Size(msg->height, msg->width), CV_8UC1);
+     cameras_[cam_index].px_nbr = msg->height * msg->width;
+  }
+
+  if (getSharpness(cv_ptr->image, cameras_[cam_index].px_nbr) < 1.5f)
+    return false;
 
   if (img_mutex_rgb_.try_lock())
   {
@@ -303,10 +304,6 @@ void Calibrator::poseProcess()
                                              pose_res);
 
     ROS_INFO_STREAM("Pose estimation error: " << rms);
-    /*ROS_INFO_STREAM("t: " << pose_res.t.at<double>(0,0)
-                    << " " << pose_res.t.at<double>(1,0)
-                    << " " << pose_res.t.at<double>(2,0));*/
-    //ROS_INFO_STREAM("R \n" << pose_res.R);
 
     pose_res.R.at<double>(0,0) *= -1;
     pose_res.R.at<double>(1,0) *= -1;
