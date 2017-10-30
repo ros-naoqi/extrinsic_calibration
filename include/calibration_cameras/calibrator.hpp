@@ -41,7 +41,7 @@ public:
   void readAndProcessImages();
 
 private:
-  void poseProcess(const std::string &frame);
+  void poseProcess();
 
   void processCameraInfo(const sensor_msgs::CameraInfoConstPtr& infoMsg,
                          const int &cam_index);
@@ -67,6 +67,9 @@ private:
 
   cv::Mat imageTo8U(const cv::Mat &image,
                     const std::string &encoding);
+
+  bool readImage(const std::string &file_name,
+                 cv::Mat *image);
 
   //write frames to a file
   void writeFrames();

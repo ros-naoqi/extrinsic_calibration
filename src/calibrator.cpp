@@ -291,7 +291,7 @@ bool Calibrator::prepareRgb(const sensor_msgs::ImageConstPtr& msg)
   return true;
 }
 
-void Calibrator::poseProcess(const std::string &frame)
+void Calibrator::poseProcess()
 {
   if (pose_estimator_.getNumberOfImagePairs() > 0)
   {
@@ -321,11 +321,11 @@ void Calibrator::poseProcess(const std::string &frame)
     pose_res.R.at<double>(2,2) *= -1;
 
     double pitch = atan2(pose_res.R.at<double>(2,1),
-                       pose_res.R.at<double>(2,2));
+                         pose_res.R.at<double>(2,2));
 
     double roll = atan2(-pose_res.R.at<double>(2,0),
                         sqrt(pose_res.R.at<double>(2,1)*pose_res.R.at<double>(2,1)
-                        + pose_res.R.at<double>(2,2)*pose_res.R.at<double>(2,2) ));
+                        + pose_res.R.at<double>(2,2)*pose_res.R.at<double>(2,2)));
 
     double yaw = atan2(pose_res.R.at<double>(1,0),
                        pose_res.R.at<double>(0,0));
@@ -339,31 +339,10 @@ void Calibrator::poseProcess(const std::string &frame)
                    tf::Vector3(-pose_res.t.at<double>(0,0),
                                -pose_res.t.at<double>(0,1),
                                -pose_res.t.at<double>(0,2))),
-        ros::Time(0), frame);
+          ros::Time(0),
+          frames_.at(0));
 
-    //transform the pose to head frame
-    std::string frame_head("Head");
-    tf::Stamped<tf::Pose> pose_depth_to_head;
-    try
-    {
-      listener_.transformPose(frame_head, pose_depth_to_rgb, pose_depth_to_head);
-    }
-    catch (tf::TransformException ex)
-    {
-     ROS_ERROR("%s",ex.what());
-    }
-
-    tf::Matrix3x3(pose_depth_to_head.getRotation()).getRPY(roll, pitch, yaw);
-
-    ROS_INFO_STREAM(frames_.at(1) << " to " << frame_head << " : "
-                    << "XYZ: " << pose_depth_to_head.getOrigin().x() << " "
-                    << pose_depth_to_head.getOrigin().y() << " "
-                    << pose_depth_to_head.getOrigin().z());
-    ROS_INFO_STREAM(frames_.at(1) << " to " << frame_head << " : "
-                    << "RPY: " << -1.0*roll << " " << pitch << " " << yaw);
-
-
-    //transform from Top to Depth
+    //transform from frame_0 to frame_1
     tf::Matrix3x3(pose_depth_to_rgb.getRotation()).getRPY(roll, pitch, yaw);
 
     ROS_INFO_STREAM(frames_.at(0) << " to " << frames_.at(1) << " : XYZ: "
@@ -371,7 +350,28 @@ void Calibrator::poseProcess(const std::string &frame)
                     << pose_depth_to_rgb.getOrigin().y() << " "
                     << pose_depth_to_rgb.getOrigin().z());
     ROS_INFO_STREAM(frames_.at(0) << " to " << frames_.at(1) << " : RPY: "
-                    << roll-3.1416 << " " << pitch << " " << yaw);
+                    << -1*roll-3.1416 << " " << pitch << " " << yaw);
+
+    //transform the pose to head frame
+    std::string frame_head("Head");
+    tf::Stamped<tf::Pose> pose_depth_to_head;
+    try
+    {
+      listener_.transformPose(frame_head, pose_depth_to_rgb, pose_depth_to_head);
+
+      tf::Matrix3x3(pose_depth_to_head.getRotation()).getRPY(roll, pitch, yaw);
+
+      ROS_INFO_STREAM(frames_.at(1) << " to " << frame_head << " : "
+                      << "XYZ: " << pose_depth_to_head.getOrigin().x() << " "
+                      << pose_depth_to_head.getOrigin().y() << " "
+                      << pose_depth_to_head.getOrigin().z());
+      ROS_INFO_STREAM(frames_.at(1) << " to " << frame_head << " : "
+                      << "RPY: " << -1.0*roll << " " << pitch << " " << yaw);
+    }
+    catch (tf::TransformException ex)
+    {
+     ROS_ERROR("%s",ex.what());
+    }
   }
 }
 
@@ -414,7 +414,7 @@ void Calibrator::processImagePair(const sensor_msgs::ImageConstPtr& msg_rgb,
   {
     if (pose_estimator_.addImagePair(cameras_[0].image, cameras_[1].image))
     {
-      poseProcess(frames_.at(0));
+      poseProcess();
       ROS_INFO_STREAM("Added image pair: " << pose_estimator_.getNumberOfImagePairs());
     }
   }
@@ -523,11 +523,30 @@ void Calibrator::saveImagePair()
   ++buf_now_;
 }
 
+bool Calibrator::readImage(const std::string &file_name,
+                           cv::Mat *image)
+{
+  //initialize if needed
+  if (image->empty())
+  {
+    cv::Mat image_temp = cv::imread(file_name, CV_LOAD_IMAGE_GRAYSCALE);
+    if(image_temp.empty())
+      return false;
+    image->create(cv::Size(image_temp.rows, image_temp.cols), CV_8UC1);
+  }
+
+  *image = cv::imread(file_name, CV_LOAD_IMAGE_GRAYSCALE);
+  if(image->empty())
+    return false;
+
+  return true;
+}
+
 void Calibrator::readAndProcessImages()
 {
   processing_ = true;
 
-  //read frames
+  //override frames if found in recordings
   readFrames();
 
   DIR *directory = opendir(input_dir_.c_str());
@@ -551,34 +570,14 @@ void Calibrator::readAndProcessImages()
       continue;
 
     //read the RGB image
-    if (cameras_[0].image.empty())
-    {
-      cv::Mat image_temp = cv::imread(file_name.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
-      if(image_temp.empty())
-        continue;
-      cameras_[0].image.create(cv::Size(image_temp.rows, image_temp.cols), CV_8UC1);
-    }
-    cameras_[0].image = cv::imread(file_name.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
-    if(cameras_[0].image.empty())
+    if (!readImage(file_name, &cameras_[0].image))
       continue;
 
     //read the depth image
     std::string file_name_depth(file_name);
     file_name_depth[file_name_depth.length()-5] = '1';
-    if (cameras_[1].image.empty())
-    {
-       cv::Mat image_temp = cv::imread(file_name_depth.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
-       if(image_temp.empty())
-         continue;
-       cameras_[1].image.create(cv::Size(image_temp.rows, image_temp.cols), CV_8UC1);
-    }
-    cameras_[1].image = cv::imread(file_name_depth.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
-    if(cameras_[1].image.empty())
+    if (!readImage(file_name_depth, &cameras_[1].image))
       continue;
-
-    //visualize
-    //cv::imshow("image_rgb_", cameras_[0].image);
-    //cv::imshow("image_depth_", cameras_[1].image);
 
     if (!processing_)
       continue;
@@ -597,11 +596,12 @@ void Calibrator::readAndProcessImages()
     if (!chessboard_found)
       continue;
 
+    //add an image pair
     if (pose_estimator_.getNumberOfImagePairs() <= buf_size_)
     {
       if (pose_estimator_.addImagePair(cameras_[0].image, cameras_[1].image))
       {
-        poseProcess(frames_.at(0));
+        poseProcess();
         ROS_INFO_STREAM("Image pair: " << pose_estimator_.getNumberOfImagePairs() << "\n");
       }
     }
