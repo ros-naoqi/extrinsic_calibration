@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>calibration_cameras</name>
+  <name>extrinsic_calibration</name>
   <version>0.0.0</version>
-  <description>Calibration camera</description>
+  <description>Extrinsic calibration for Pepper robot with its color and depth cameras</description>
   <author email="natalia.lyubova@gmail.com">Natalia Lyubova</author>
   <maintainer email="natalia.lyubova@gmail.com">Natalia Lyubova</maintainer>
 

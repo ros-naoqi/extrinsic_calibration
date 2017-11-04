@@ -1,4 +1,4 @@
-#include "calibration_cameras/pose_estimation.hpp"
+#include "pose_estimation.hpp"
 
 //Include basic headers
 #include <iostream>

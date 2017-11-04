@@ -10,7 +10,7 @@
 #include <fstream>
 #include <string>
 
-#include "calibration_cameras/calibrator.hpp"
+#include "calibrator.hpp"
 
 Calibrator::Calibrator():
   nh_("~"),

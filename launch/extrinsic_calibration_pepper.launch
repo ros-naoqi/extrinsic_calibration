@@ -1,7 +1,7 @@
 <launch>
   <arg name="camera" default="naoqi_driver_node/camera" />
 
-  <node pkg="calibration_cameras" type="calibration_cameras" name="calibration_cameras" output="screen" cwd="node">
+  <node pkg="extrinsic_calibration" type="extrinsic_calibration" name="extrinsic_calibration_node" output="screen" cwd="node">
     <param name="depth_img_topic" value="/$(arg camera)/ir/image_raw" />
     <param name="rgb_img_topic" value="/$(arg camera)/front/image_raw" />
 

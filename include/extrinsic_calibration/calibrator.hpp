@@ -14,7 +14,7 @@
 
 #include <mutex>
 
-#include "calibration_cameras/pose_estimation.hpp"
+#include "pose_estimation.hpp"
 
 typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> MySyncPolicy;
 

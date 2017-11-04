@@ -25,11 +25,11 @@ qicli call ALMotion.setAngles "HeadPitch" 0.0 0.3
 roslaunch naoqi_driver naoqi_driver.launch nao_ip:=<PEPPER_IP>
 ```
 
-* create an empty folder for data recording and provide its name in launch/calibration_cameras_pepper.launch
-* update ROS topics for color and IR images in launch/calibration_cameras_pepper.launch
+* create an empty folder for data recording and provide its name in launch/extrinsic_calibration_pepper.launch
+* update ROS topics for color and IR images in launch/extrinsic_calibration_pepper.launch
 * launch the code:
 ```
-roslaunch calibration_cameras calibration_cameras_pepper.launch
+roslaunch extrinsic_calibration extrinsic_calibration_pepper.launch
 ```
 
 * if the software can subscribe to ROS topics, then you should see an image from a color camera
@@ -38,8 +38,11 @@ roslaunch calibration_cameras calibration_cameras_pepper.launch
 * repeat 2 previous steps each time changing a distance and/or an angle to cover different views (at 60cm-80m distance) until you reach a sufficient number of image pairs (for example, 30 times or more)
 
 ## Calibration based on recorded data
-* launch the code to compute extrinsic parameters based on recorded images: roslaunch calibration_cameras
-  calibration_cameras_pepper.launch
+* launch the code to compute extrinsic parameters based on recorded images:
+```
+roslaunch extrinsic_calibration extrinsic_calibration_pepper.launch
+```
+
 * press "c" on your keyboard to compute calibration values
 * check if the resulted XYZ and RPY for last processed image pair correspond to the reality
 

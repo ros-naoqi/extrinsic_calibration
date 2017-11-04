@@ -1,10 +1,10 @@
-#include "calibration_cameras/calibrator.hpp"
+#include "calibrator.hpp"
 
 #include <opencv2/opencv.hpp>
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "calibration_cameras");
+  ros::init(argc, argv, "extrinsic_calibration_node");
 
   Calibrator calib;
 
