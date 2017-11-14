@@ -4,7 +4,9 @@
   <version>0.0.0</version>
   <description>Extrinsic calibration for Pepper robot with its color and depth cameras</description>
   <author email="natalia.lyubova@gmail.com">Natalia Lyubova</author>
+  <author email="mylodlakseni@gmail.com">Oksana Hagen</author>
   <maintainer email="natalia.lyubova@gmail.com">Natalia Lyubova</maintainer>
+  <maintainer email="mylodlakseni@gmail.com">Oksana Hagen</maintainer>
 
   <license>BSD</license>
 
