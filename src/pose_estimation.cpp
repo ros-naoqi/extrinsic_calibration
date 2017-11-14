@@ -5,6 +5,8 @@
 #include <ctime>
 #include <cstring>
 
+#define HAS_OPENCV3 0
+
 PoseEstimation::PoseEstimation():
   pattern_square_size_(0.025),
   pattern_size_(cv::Size(9, 6))
@@ -129,6 +131,8 @@ float PoseEstimation::estimatePose(CameraCalibration& C1,
                                    Pose& pose)
 {
   if (getNumberOfImagePairs() > 0)
+  {
+#if HAS_OPENCV3
     pose.rms = cv::stereoCalibrate(world_points,
                                    image_points[0],
                                    image_points[1],
@@ -136,10 +140,22 @@ float PoseEstimation::estimatePose(CameraCalibration& C1,
                                    image_pairs[0][0].size(),
                                    pose.R, pose.t, pose.E, pose.F,
                                    cv::CALIB_FIX_INTRINSIC,
-                                   cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 1e-6));
-	
-	return pose.rms;
+                                   cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 100, DBL_EPSILON));
+#else
+    pose.rms = cv::stereoCalibrate(world_points,
+                                   image_points[0],
+                                   image_points[1],
+                                   C1.A, C1.d, C2.A, C2.d,
+                                   image_pairs[0][0].size(),
+                                   pose.R, pose.t, pose.E, pose.F,
+                                   cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 100, DBL_EPSILON),
+                                   cv::CALIB_FIX_INTRINSIC);
+#endif
 
+    return pose.rms;
+  }
+  else
+    return std::numeric_limits<float>::max();
 }
 
 int PoseEstimation::getNumberOfImagePairs()
