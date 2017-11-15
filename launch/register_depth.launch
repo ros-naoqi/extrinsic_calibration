@@ -4,23 +4,23 @@
         args="-0.0359987 0.0447252 -0.0152002 -0.0161349 -0.00697016 -0.0229235
         CameraTop_optical_frame CameraDepth_optical_frame 1"/>
   
-  <node pkg="image_proc" type="image_proc" name="rgb_processing" output="screen" ns="/naoqi_driver_node/camera/front" />
+  <node pkg="image_proc" type="image_proc" name="rgb_processing" output="screen" ns="/naoqi_driver/camera/front" />
 
   <node pkg="nodelet" type="nodelet" name="register_depth" output="screen"
         args="standalone depth_image_proc/register" >
-    <remap from="rgb/camera_info" to="/naoqi_driver_node/camera/front/camera_info"/>
-    <remap from="depth/camera_info" to="/naoqi_driver_node/camera/depth/camera_info"/>
-    <remap from="depth/image_rect" to="/naoqi_driver_node/camera/depth/image_raw"/>
-    <remap from="depth_registered/camera_info" to="/naoqi_driver_node/camera/depth_registered/camera_info"/>
-    <remap from="depth_registered/image_rect" to="/naoqi_driver_node/camera/depth_registered/image_rect"/>
+    <remap from="rgb/camera_info" to="/naoqi_driver/camera/front/camera_info"/>
+    <remap from="depth/camera_info" to="/naoqi_driver/camera/depth/camera_info"/>
+    <remap from="depth/image_rect" to="/naoqi_driver/camera/depth/image_raw"/>
+    <remap from="depth_registered/camera_info" to="/naoqi_driver/camera/depth_registered/camera_info"/>
+    <remap from="depth_registered/image_rect" to="/naoqi_driver/camera/depth_registered/image_rect"/>
   </node>
 
   <node pkg="nodelet" type="nodelet" name="cloudify" output="screen"
         args="standalone depth_image_proc/point_cloud_xyzrgb" >
-    <remap from="rgb/camera_info" to="/naoqi_driver_node/camera/front/camera_info"/>
-    <remap from="rgb/image_rect_color" to="/naoqi_driver_node/camera/front/image_rect_color"/>
-    <remap from="depth_registered/image_rect" to="/naoqi_driver_node/camera/depth_registered/image_rect"/>
-    <remap from="depth_registered/points" to="/naoqi_driver_node/camera/depth_registered/points"/>
+    <remap from="rgb/camera_info" to="/naoqi_driver/camera/front/camera_info"/>
+    <remap from="rgb/image_rect_color" to="/naoqi_driver/camera/front/image_rect_color"/>
+    <remap from="depth_registered/image_rect" to="/naoqi_driver/camera/depth_registered/image_rect"/>
+    <remap from="depth_registered/points" to="/naoqi_driver/camera/depth_registered/points"/>
   </node>
 </launch>
 
