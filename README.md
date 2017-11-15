@@ -46,14 +46,7 @@ roslaunch extrinsic_calibration extrinsic_calibration_pepper.launch
 * press "c" on your keyboard to compute calibration values
 * check if the resulted XYZ and RPY for last processed image pair correspond to the reality
 
-The extrinsic parameters obtained for our Pepper are:
-
-```
-XYZ: 0.0708098 0.02 0.118115
-RPY: -1.5936 -0.0161345 -1.57777
-```
-
-### How to update the extrinsic parameters in URDF of your robot
+### How to apply the extrinsic parameters
 
 Once the calibration parameters are found, you can apply them using ROS static_transform_publisher. Check an example in register_depth.launch, update the values (x y z yaw pitch roll) and launch it after naoqi_driver:
 ```
